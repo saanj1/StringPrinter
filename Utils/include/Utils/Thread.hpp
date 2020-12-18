@@ -6,7 +6,20 @@
  * Thread::Thread class
  */
 
+
+#define SNJ_MAKE_NONCOPYABLE(c)\
+private:                       \
+  c(const c&) noexcept = delete;\
+  c& operator=(const c&) noexcept = delete
+
+#define SNJ_MAKE_NONMOVABLE(c)\
+private:                      \
+  c(c&&) noexcept = delete;   \
+  c& operator=(c&&) noexcept = delete
+
+
 #include <pthread.h>
+#include <signal.h>
 
 namespace Utils {
   class Thread {
@@ -14,14 +27,11 @@ namespace Utils {
       //Life cycle management
       ~Thread() {
         if (pthread_id_ != -1){
-           pthread_cancel(pthread_id_);
+          pthread_kill(pthread_id_, SIGUSR1);
         }
       }
-      Thread(const Thread&) = delete;
-      Thread(Thread&&) = delete;
-      Thread& operator=(const Thread&) = delete;
-      Thread& operator=(Thread&&) = delete;
-
+      SNJ_MAKE_NONCOPYABLE(Thread);
+      SNJ_MAKE_NONMOVABLE(Thread);
     public:
       /**
        * This is the constructor of the class

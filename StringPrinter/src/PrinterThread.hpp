@@ -15,15 +15,13 @@
 namespace StringPrinter {
 
   class PrinterThread : public Utils::Thread {
-  public:
+   public:
     //Life cycle management
     ~PrinterThread() = default;
-    PrinterThread(const PrinterThread&) = delete;
-    PrinterThread(PrinterThread&&) = delete;
-    PrinterThread& operator=(const PrinterThread&) = delete;
-    PrinterThread& operator=(PrinterThread&&) = delete;
+    SNJ_MAKE_NONCOPYABLE(PrinterThread);
+    SNJ_MAKE_NONMOVABLE(PrinterThread);
   
-  public:
+   public:
     /**
      * This is the constructor
      * 
@@ -32,19 +30,17 @@ namespace StringPrinter {
      * 
      * @param[in]
      *  number of characters this thread should print
-     * 
-     * #
      */
     PrinterThread(
-    const char* t_str, 
-    size_t t_size,
-    uint64_t t_chars_to_print,
-    uint64_t &t_index,
-    uint64_t t_thread_id,
-    uint32_t &t_turn,
-    std::shared_ptr<std::mutex> t_mut,
-    std::shared_ptr<std::condition_variable> t_cond_turn,
-    std::shared_ptr<std::condition_variable> t_main_thread_turn_
+      const char* t_str, 
+      size_t t_size,
+      uint64_t t_chars_to_print,
+      uint64_t &t_index,
+      uint64_t t_thread_id,
+      uint32_t &t_turn,
+      std::shared_ptr<std::mutex> t_mut,
+      std::shared_ptr<std::condition_variable> t_cond_turn,
+      std::shared_ptr<std::condition_variable> t_main_thread_turn_
     ) 
     : data_str_(t_str),
       str_size_(t_size),
@@ -57,38 +53,38 @@ namespace StringPrinter {
       cond_thread_turn_(t_cond_turn),
       main_thread_cond_var_(t_main_thread_turn_)
     {}
-  protected:
+   protected:
 
     /**
      * This is the main thread code
      */
     virtual void thread_main() {
-    while(keep_me_running_) {
-      std::unique_lock<std::mutex> lock(*thread_turn_mutex.get());
-      cond_thread_turn_->wait(lock, 
-        [&thread_turn_ = thread_turn_, 
-         &thread_id_ = thread_id_
-        ]() {
-        return thread_turn_ == thread_id_;
-         }
-      );
-      std::cout << "Thread" << thread_id_ << ": ";
-      for(size_t i = 0; i < no_chars_to_process_; ++i) {
-      std::cout << data_str_[(current_index_ + i) % str_size_];
+      while(keep_me_running_) {
+        std::unique_lock<std::mutex> lock(*thread_turn_mutex.get());
+        cond_thread_turn_->wait(lock, 
+          [&thread_turn_ = thread_turn_, 
+            &thread_id_ = thread_id_
+          ]() {
+            return thread_turn_ == thread_id_;
+          }
+        );
+        std::cout << "Thread" << thread_id_ << ": ";
+        for(size_t i = 0; i < no_chars_to_process_; ++i) {
+          std::cout << data_str_[(current_index_ + i) % str_size_];
+        }
+        std::cout << std::endl;
+        thread_turn_ = 0;
+        main_thread_cond_var_->notify_one();
       }
-      std::cout << std::endl;
-      thread_turn_ = 0;
-      main_thread_cond_var_->notify_one();
     }
-    }
-    public:
+   public:
     virtual void stop_thread() {
-    if (keep_me_running_) {
-      keep_me_running_ = false;
-    }
+      if (keep_me_running_) {
+        keep_me_running_ = false;
+      }
     }
 
-  private:
+   private:
     /**
      * This contains address to the actual string 
      * that needs to be printed on the stdout.
